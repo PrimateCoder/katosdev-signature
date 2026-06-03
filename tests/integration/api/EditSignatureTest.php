@@ -5,11 +5,12 @@ namespace katosdev\Signature\Tests\integration\api;
 use Flarum\Testing\integration\RetrievesAuthorizedUsers;
 use Flarum\Testing\integration\TestCase;
 use Flarum\User\User;
+use PHPUnit\Framework\Attributes\Test;
 
 class EditSignatureTest extends TestCase
 {
     use RetrievesAuthorizedUsers;
-    
+
     public function setUp(): void
     {
         parent::setUp();
@@ -40,9 +41,7 @@ class EditSignatureTest extends TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function user_can_edit_own_signature_when_allowed_to_have_one()
     {
         $response = $this->send(
@@ -71,9 +70,7 @@ class EditSignatureTest extends TestCase
         $this->assertEquals('<t>This is my new signature</t>', $user->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function user_with_edit_permission_cannot_edit_admin_signature()
     {
         $response = $this->send(
@@ -98,9 +95,7 @@ class EditSignatureTest extends TestCase
         $this->assertEquals('too-obscure4', $user->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function moderator_can_edit_member_signature()
     {
         $response = $this->send(
@@ -129,9 +124,7 @@ class EditSignatureTest extends TestCase
         $this->assertEquals('<t>Moderator edited this</t>', $user->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function moderator_cannot_edit_admin_signature()
     {
         $response = $this->send(
