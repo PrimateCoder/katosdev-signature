@@ -2,3 +2,5 @@ vendor
 composer.lock
 node_modules
 .phpunit.result.cache
+tests/ux/_baselines/*-diff.png
+tests/ux/_baselines/*-actual.png
