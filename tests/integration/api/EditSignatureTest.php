@@ -33,7 +33,9 @@ class EditSignatureTest extends TestCase
                 ['id' => 5, 'name_singular' => 'TestSig', 'name_plural' => 'TestSigs', 'color' => '#FF0000', 'icon' => 'fas fa-user'],
             ],
             'group_user' => [
+                ['user_id' => 4, 'group_id' => 4],
                 ['user_id' => 5, 'group_id' => 5],
+                ['user_id' => 6, 'group_id' => 1],
             ],
         ]);
     }
@@ -94,5 +96,61 @@ class EditSignatureTest extends TestCase
         $user = User::find(6);
 
         $this->assertEquals('too-obscure4', $user->signature);
+    }
+
+    /**
+     * @test
+     */
+    public function moderator_can_edit_member_signature()
+    {
+        $response = $this->send(
+            $this->request('PATCH', '/api/users/5',
+                [
+                    'authenticatedAs' => 4,
+                    'json' => [
+                        'data' => [
+                            'attributes' => [
+                                'signature' => 'Moderator edited this',
+                            ],
+                        ],
+                    ],
+                ]
+            )
+        );
+
+        $this->assertEquals(200, $response->getStatusCode(), 'Moderator should be able to edit member signature');
+
+        $json = json_decode($response->getBody()->getContents(), true);
+
+        $this->assertEquals('Moderator edited this', $json['data']['attributes']['signature']);
+
+        $user = User::find(5);
+
+        $this->assertEquals('<t>Moderator edited this</t>', $user->signature);
+    }
+
+    /**
+     * @test
+     */
+    public function moderator_cannot_edit_admin_signature()
+    {
+        $response = $this->send(
+            $this->request('PATCH', '/api/users/6',
+                [
+                    'authenticatedAs' => 4,
+                    'json' => [
+                        'data' => [
+                            'attributes' => [
+                                'signature' => 'Moderator should not edit this',
+                            ],
+                        ],
+                    ],
+                ]
+            )
+        );
+
+        $statusCode = $response->getStatusCode();
+
+        $this->assertEquals(403, $statusCode, "Moderator should not be able to edit admin signature (got $statusCode)");
     }
 }
