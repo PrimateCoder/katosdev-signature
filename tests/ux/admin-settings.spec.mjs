@@ -1,7 +1,7 @@
 // Admin settings spec — tests the extension's admin settings page.
 
 import {
-  createBrowser, createPage,
+  createBrowser, createPage, createCheck,
   dbWriteSetting, dbReadSetting, clearCache,
   BASE_URL,
 } from '../../.pianotell/tests/ux/helpers.mjs';
@@ -13,10 +13,7 @@ if (!BASE_URL || !COOKIE) {
 }
 
 const failures = [];
-function check(label, ok, detail) {
-  if (ok) console.log(`  ✓ ${label}`);
-  else { console.log(`  ✗ ${label}  ${detail ?? ''}`); failures.push({ label, detail }); }
-}
+const check = createCheck(failures);
 
 (async () => {
   console.log('admin-settings spec');

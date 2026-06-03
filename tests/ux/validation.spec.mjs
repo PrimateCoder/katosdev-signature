@@ -1,6 +1,7 @@
 import {
-  createBrowser, createPage,
+  createBrowser, createPage, createCheck,
   dbWriteSetting, dbReadSetting, clearCache, apiFetch, dbQuery,
+  fetchTestUser,
   BASE_URL,
 } from '../../.pianotell/tests/ux/helpers.mjs';
 
@@ -13,10 +14,7 @@ if (!BASE_URL || !COOKIE) {
 }
 
 const failures = [];
-function check(label, ok, detail) {
-  if (ok) console.log(`  ✓ ${label}`);
-  else { console.log(`  ✗ ${label}  ${detail ?? ''}`); failures.push({ label, detail }); }
-}
+const check = createCheck(failures);
 
 async function patchSignature(userId, signature, token) {
   const resp = await fetch(`${BASE_URL}/api/users/${userId}`, {
@@ -42,17 +40,6 @@ async function patchSignature(userId, signature, token) {
   }
 
   return { status: resp.status, body };
-}
-
-async function fetchAdminUser() {
-  const result = await apiFetch('/users?filter[q]=flamoji_ux_test', COOKIE);
-  const user = result?.data?.find((entry) => entry?.attributes?.username === 'flamoji_ux_test') || result?.data?.[0];
-
-  if (!user?.id) {
-    throw new Error(`Unable to find admin test user: ${JSON.stringify(result)}`);
-  }
-
-  return user;
 }
 
 async function readUser(userId) {
@@ -83,7 +70,7 @@ async function ensureSettingRow(key, value) {
     await ensureSettingRow('signature.maximum_char_limit', '500');
     await ensureSettingRow('signature.maximum_image_count', '2');
 
-    const adminUser = await fetchAdminUser();
+    const adminUser = await fetchTestUser();
     userId = adminUser.id;
 
     await dbWriteSetting('signature.maximum_char_limit', '10');
@@ -152,7 +139,7 @@ async function ensureSettingRow(key, value) {
     const browserSetup = await createBrowser(COOKIE);
     browser = browserSetup.browser;
     const page = await createPage(browserSetup.context);
-    await page.goto(`${BASE_URL}/u/flamoji_ux_test/signature`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE_URL}/u/pianotell_ux_test/signature`, { waitUntil: 'networkidle' });
     await page.waitForSelector('.SignaturePage', { timeout: 15_000 });
     await page.waitForTimeout(1000);
     check(

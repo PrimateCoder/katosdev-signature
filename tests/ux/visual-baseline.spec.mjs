@@ -13,9 +13,9 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import {
-  createBrowser, createPage, createTestDiscussion,
-  dbWriteSetting, clearCache, apiPatchJson, apiFetch,
-  compareScreenshot,
+  createBrowser, createPage, createCheck, createTestDiscussion,
+  dbWriteSetting, clearCache, apiPatchJson,
+  compareScreenshot, fetchTestUser,
   BASE_URL,
 } from '../../.pianotell/tests/ux/helpers.mjs';
 
@@ -32,10 +32,7 @@ if (!BASE_URL || !COOKIE) {
 }
 
 const failures = [];
-function check(label, ok, detail) {
-  if (ok) console.log(`  ✓ ${label}${detail ? '  ' + detail : ''}`);
-  else { console.log(`  ✗ ${label}  ${detail ?? ''}`); failures.push({ label, detail }); }
-}
+const check = createCheck(failures);
 
 async function screenshotElement(page, selector) {
   const el = await page.$(selector);
@@ -48,20 +45,6 @@ async function screenshotElement(page, selector) {
     y: Math.max(0, Math.round(box.y - pad)),
     width: Math.round(box.width + pad * 2),
     height: Math.round(box.height + pad * 2),
-  };
-}
-
-async function fetchTestUser() {
-  const me = await apiFetch('/users?filter[q]=flamoji_ux_test', COOKIE);
-  const user = me.data?.find((entry) => entry.attributes?.username === 'flamoji_ux_test') || me.data?.[0];
-
-  if (!user) {
-    throw new Error('Could not resolve flamoji_ux_test user via API');
-  }
-
-  return {
-    id: user.id,
-    slug: user.attributes?.slug || user.attributes?.username || 'flamoji_ux_test',
   };
 }
 

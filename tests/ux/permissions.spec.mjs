@@ -1,6 +1,7 @@
 import {
-  createBrowser, createPage, createTestDiscussion,
+  createBrowser, createPage, createCheck, createTestDiscussion,
   dbQuery, dbReadSetting, dbWriteSetting, clearCache, apiFetch,
+  apiDeleteJson, dbExecStatement, fetchTestUser,
   BASE_URL, CONTAINER, FLARUM_PATH,
 } from '../../.pianotell/tests/ux/helpers.mjs';
 import { execFileSync } from 'node:child_process';
@@ -15,10 +16,7 @@ if (!BASE_URL || !COOKIE) {
 }
 
 const failures = [];
-function check(label, ok, detail) {
-  if (ok) console.log(`  ✓ ${label}`);
-  else { console.log(`  ✗ ${label}  ${detail ?? ''}`); failures.push({ label, detail }); }
-}
+const check = createCheck(failures);
 
 const EXTRA_USERS = [
   {
@@ -64,41 +62,6 @@ function runProvisioner(action) {
   }
 }
 
-function runSqlStatement(sql) {
-  const encodedSql = Buffer.from(sql, 'utf8').toString('base64');
-  const php = [
-    '$site = require getenv("PIANOTELL_FLARUM_UX_FLARUM_PATH") . "/site.php";',
-    '$app = $site->bootApp();',
-    '$db = $app->getContainer()->make("Illuminate\\\\Database\\\\ConnectionInterface");',
-    '$db->statement(base64_decode("' + encodedSql + '"));',
-  ].join(' ');
-
-  execFileSync('docker', [
-    'exec',
-    '-u', PHP_USER,
-    '-e', `PIANOTELL_FLARUM_UX_FLARUM_PATH=${FLARUM_PATH}`,
-    CONTAINER,
-    'php',
-    '-r',
-    php,
-  ], { stdio: 'inherit' });
-}
-
-async function fetchTestUser() {
-  const users = await apiFetch(`/users?filter[q]=${encodeURIComponent('flamoji_ux_test')}`, COOKIE);
-  const user = users.data?.find((entry) => entry.attributes?.username === 'flamoji_ux_test') || users.data?.[0];
-
-  if (!user) {
-    throw new Error('Could not resolve flamoji_ux_test user via API');
-  }
-
-  return {
-    id: user.id,
-    username: user.attributes?.username || 'flamoji_ux_test',
-    slug: user.attributes?.slug || user.attributes?.username || 'flamoji_ux_test',
-  };
-}
-
 async function fetchUserId(username) {
   const id = await dbQuery(`SELECT id FROM users WHERE username = '${username}' LIMIT 1`);
   if (!id) {
@@ -131,15 +94,6 @@ async function patchSignature(userId, token, signature) {
   } catch {}
 
   return { resp, body };
-}
-
-async function deleteDiscussion(discussionId, token) {
-  await fetch(`${BASE_URL}/api/discussions/${discussionId}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: 'Token ' + token,
-    },
-  });
 }
 
 (async () => {
@@ -228,7 +182,7 @@ async function deleteDiscussion(discussionId, token) {
     check('Guest does not see edit controls', guestEditButtons === 0 && guestEditor === null,
       `buttons=${guestEditButtons} editor=${guestEditor ? 'present' : 'absent'}`);
 
-    runSqlStatement("DELETE FROM group_permission WHERE permission = 'haveSignature' AND group_id = 3");
+    await dbExecStatement("DELETE FROM group_permission WHERE permission = 'haveSignature' AND group_id = 3");
 
     const deniedPatch = await patchSignature(noPermId, NO_PERM.token, `Denied signature ${Date.now() + 2}`);
     check('API denies signature for user without permission', deniedPatch.resp.status === 403,
@@ -254,15 +208,15 @@ async function deleteDiscussion(discussionId, token) {
 
     try {
       if (discussionId) {
-        await deleteDiscussion(discussionId, COOKIE);
+        await apiDeleteJson('/discussions/' + discussionId, COOKIE);
       }
     } catch {}
 
     try {
       if (membersHaveSignature) {
-        runSqlStatement("INSERT IGNORE INTO group_permission (permission, group_id) VALUES ('haveSignature', 3)");
+        await dbExecStatement("INSERT IGNORE INTO group_permission (permission, group_id) VALUES ('haveSignature', 3)");
       } else {
-        runSqlStatement("DELETE FROM group_permission WHERE permission = 'haveSignature' AND group_id = 3");
+        await dbExecStatement("DELETE FROM group_permission WHERE permission = 'haveSignature' AND group_id = 3");
       }
     } catch {}
 

@@ -1,6 +1,6 @@
 import {
-  createBrowser, createPage, createTestDiscussion,
-  apiFetch, apiPatchJson,
+  createBrowser, createPage, createCheck, createTestDiscussion,
+  apiFetch, apiPatchJson, fetchTestUser,
   dbWriteSetting, clearCache,
   BASE_URL,
 } from '../../.pianotell/tests/ux/helpers.mjs';
@@ -14,25 +14,7 @@ if (!BASE_URL || !COOKIE) {
 }
 
 const failures = [];
-function check(label, ok, detail) {
-  if (ok) console.log(`  ✓ ${label}`);
-  else { console.log(`  ✗ ${label}  ${detail ?? ''}`); failures.push({ label, detail }); }
-}
-
-async function fetchTestUser() {
-  const users = await apiFetch(`/users?filter[q]=${encodeURIComponent('flamoji_ux_test')}`, COOKIE);
-  const user = users.data?.find((entry) => entry.attributes?.username === 'flamoji_ux_test') || users.data?.[0];
-
-  if (!user) {
-    throw new Error('Could not resolve flamoji_ux_test user via API');
-  }
-
-  return {
-    id: user.id,
-    username: user.attributes?.username || 'flamoji_ux_test',
-    slug: user.attributes?.slug || user.attributes?.username || 'flamoji_ux_test',
-  };
-}
+const check = createCheck(failures);
 
 async function fetchUserAttributes(userId) {
   const payload = await apiFetch(`/users/${userId}`, COOKIE);
