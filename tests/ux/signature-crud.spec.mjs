@@ -84,7 +84,7 @@ async function saveSignature(page, value) {
 
     await page.goto(profileUrl, { waitUntil: 'networkidle' });
     await page.waitForSelector('.UserPage', { timeout: 15_000 });
-    check('Signature nav link visible', await page.getByRole('link', { name: 'Signature' }).isVisible());
+    check('Signature nav link visible', await page.getByRole('link', { name: 'Signature', exact: true }).isVisible());
 
     await page.goto(signatureUrl, { waitUntil: 'networkidle' });
     await page.waitForSelector('.SignaturePage', { timeout: 15_000 });
