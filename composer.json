@@ -48,7 +48,7 @@
             }
         }
     },
-    "minimum-stability": "RC",
+    "minimum-stability": "beta",
     "prefer-stable": true,
     "require-dev": {
         "flarum/phpstan": "*",

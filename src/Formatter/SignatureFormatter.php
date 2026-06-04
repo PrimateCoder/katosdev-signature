@@ -10,13 +10,9 @@ use s9e\TextFormatter\Parser;
 
 class SignatureFormatter extends Formatter
 {
-    protected ExtensionManager $extensions;
-
-    public function __construct(Repository $cache, string $cacheDir, ExtensionManager $extensions)
+    public function __construct(Repository $cache, string $cacheDir, protected ExtensionManager $extensions)
     {
         parent::__construct($cache, $cacheDir);
-
-        $this->extensions = $extensions;
     }
 
     protected function getComponent(string $name): mixed
